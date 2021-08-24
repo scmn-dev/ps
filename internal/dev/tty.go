@@ -82,3 +82,28 @@ func majDevNum(rdev uint64) uint64 {
 func minDevNum(rdev uint64) uint64 {
 	return (rdev & 0xff) | ((rdev >> 12) & 0xfff00)
 }
+
+func FindTTY(ttyNr uint64, devices *[]TTY) (*TTY, error) {
+	// (man 5 proc) The minor device number is contained in the combination
+	// of bits 31 to 20 and 7 to 0; the major device number is in bits 15
+	// to 8.
+	maj := (ttyNr >> 8) & 0xFF
+	min := (ttyNr & 0xFF) | ((ttyNr >> 20) & 0xFFF)
+
+	if devices == nil {
+		devs, err := TTYs()
+		if err != nil {
+			return nil, err
+		}
+
+		devices = devs
+	}
+
+	for _, t := range *devices {
+		if t.Minor == min && t.Major == maj {
+			return &t, nil
+		}
+	}
+
+	return nil, nil
+}
