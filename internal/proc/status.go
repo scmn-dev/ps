@@ -1,5 +1,12 @@
 package proc
 
+import (
+	"fmt"
+	"os"
+	"os/exec"
+	"strings"
+)
+
 type Status struct {
 	Name string
 	Umask string
@@ -54,4 +61,17 @@ type Status struct {
 	MemsAllowedList string
 	VoluntaryCtxtSwitches string
 	NonvoluntaryCtxtSwitches string
+}
+
+func readStatusUserNS(pid string) ([]string, error) {
+	path := fmt.Sprintf("/proc/%s/status", pid)
+	args := []string{"nsenter", "-U", "-t", pid, "cat", path}
+
+	c := exec.Command(args[0], args[1:]...)
+	output, err := c.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("error executing %q: %v", strings.Join(args, " "), err)
+	}
+
+	return strings.Split(string(output), "\n"), nil
 }
