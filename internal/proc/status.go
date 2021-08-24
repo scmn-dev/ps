@@ -1,6 +1,7 @@
 package proc
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"os/exec"
@@ -74,4 +75,37 @@ func readStatusUserNS(pid string) ([]string, error) {
 	}
 
 	return strings.Split(string(output), "\n"), nil
+}
+
+func readStatusDefault(pid string) ([]string, error) {
+	path := fmt.Sprintf("/proc/%s/status", pid)
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	lines := []string{}
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
+	return lines, nil
+}
+
+func ParseStatus(pid string, joinUserNS bool) (*Status, error) {
+	var lines []string
+	var err error
+
+	if joinUserNS {
+		lines, err = readStatusUserNS(pid)
+	} else {
+		lines, err = readStatusDefault(pid)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return parseStatus(pid, lines)
 }
