@@ -44,3 +44,19 @@ var (
 
 	FullCAPs = uint64(0x3FFFFFFFFF)
 )
+
+func TranslateMask(mask uint64) []string {
+	caps := []string{}
+	for i := uint(0); i < 64; i++ {
+		if (mask>>i)&0x1 == 1 {
+			c, known := capabilities[i]
+			if !known {
+				c = "unknown"
+			}
+
+			caps = append(caps, c)
+		}
+	}
+
+	return caps
+}
