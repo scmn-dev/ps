@@ -19,3 +19,12 @@ func ParsePIDNamespace(pid string) (string, error) {
 
 	return pidNS, nil
 }
+
+func ParseUserNamespace(pid string) (string, error) {
+	userNS, err := os.Readlink(fmt.Sprintf("/proc/%s/ns/user", pid))
+	if err != nil {
+		return "", err
+	}
+
+	return userNS, nil
+}
