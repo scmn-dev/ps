@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"io/ioutil"
 
-	"github.com/gepis/ps/internal/cap"
+	capkg "github.com/gepis/ps/internal/cap"
 	"github.com/gepis/ps/internal/dev"
 	"github.com/gepis/ps/internal/process"
 	"github.com/gepis/ps/internal/proc"
@@ -545,4 +545,226 @@ func findHostProcess(p *process.Process, ctx *psContext) *process.Process {
 
 func processGROUP(p *process.Process, ctx *psContext) (string, error) {
 	return process.LookupGID(p.Status.Gids[1])
+}
+
+func processUSER(p *process.Process, ctx *psContext) (string, error) {
+	return process.LookupUID(p.Status.Uids[1])
+}
+
+// processRUSER returns the effective user name of the process.  This will be
+// the textual user ID, if it can be optained, or a decimal representation
+// otherwise.
+func processRUSER(p *process.Process, ctx *psContext) (string, error) {
+	return process.LookupUID(p.Status.Uids[0])
+}
+
+// processName returns the name of process p in the format "[$name]".
+func processName(p *process.Process, ctx *psContext) (string, error) {
+	return fmt.Sprintf("[%s]", p.Status.Name), nil
+}
+
+// processARGS returns the command of p with all its arguments.
+func processARGS(p *process.Process, ctx *psContext) (string, error) {
+	if p.CmdLine[0] == "" {
+		return processName(p, ctx)
+	}
+
+	return strings.Join(p.CmdLine, " "), nil
+}
+
+// processCOMM returns the command name (i.e., executable name) of process p.
+func processCOMM(p *process.Process, ctx *psContext) (string, error) {
+	return p.Stat.Comm, nil
+}
+
+// processNICE returns the nice value of process p.
+func processNICE(p *process.Process, ctx *psContext) (string, error) {
+	return p.Stat.Nice, nil
+}
+
+// processPID returns the process ID of process p.
+func processPID(p *process.Process, ctx *psContext) (string, error) {
+	return p.Pid, nil
+}
+
+// processPGID returns the process group ID of process p.
+func processPGID(p *process.Process, ctx *psContext) (string, error) {
+	return p.Stat.Pgrp, nil
+}
+
+// processPCPU returns how many percent of the CPU time process p uses as
+func processPCPU(p *process.Process, ctx *psContext) (string, error) {
+	elapsed, err := p.ElapsedTime()
+	if err != nil {
+		return "", err
+	}
+
+	cpu, err := p.CPUTime()
+	if err != nil {
+		return "", err
+	}
+
+	pcpu := 100 * cpu.Seconds() / elapsed.Seconds()
+
+	return strconv.FormatFloat(pcpu, 'f', 3, 64), nil
+}
+
+// processETIME returns the elapsed time since the process was started.
+func processETIME(p *process.Process, ctx *psContext) (string, error) {
+	elapsed, err := p.ElapsedTime()
+	if err != nil {
+		return "", nil
+	}
+
+	return fmt.Sprintf("%v", elapsed), nil
+}
+
+// processTIME returns the cumulative CPU time of process p.
+func processTIME(p *process.Process, ctx *psContext) (string, error) {
+	cpu, err := p.CPUTime()
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%v", cpu), nil
+}
+
+// processStartTime returns the start time of process p.
+func processStartTime(p *process.Process, ctx *psContext) (string, error) {
+	sTime, err := p.StartTime()
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%v", sTime), nil
+}
+
+// processTTY returns the controlling tty (terminal) of process p.
+func processTTY(p *process.Process, ctx *psContext) (string, error) {
+	ttyNr, err := strconv.ParseUint(p.Stat.TtyNr, 10, 64)
+	if err != nil {
+		return "", nil
+	}
+
+	tty, err := dev.FindTTY(ttyNr, ctx.ttys)
+	if err != nil {
+		return "", nil
+	}
+
+	ttyS := "?"
+	if tty != nil {
+		ttyS = strings.TrimPrefix(tty.Path, "/dev/")
+	}
+
+	return ttyS, nil
+}
+
+func processVSZ(p *process.Process, ctx *psContext) (string, error) {
+	vmsize, err := strconv.Atoi(p.Stat.Vsize)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%d", vmsize/1024), nil
+}
+
+func parseCAP(cap string) (string, error) {
+	mask, err := strconv.ParseUint(cap, 16, 64)
+	if err != nil {
+		return "", err
+	}
+
+	if mask == capkg.FullCAPs {
+		return "full", nil
+	}
+
+	caps := capkg.TranslateMask(mask)
+	if len(caps) == 0 {
+		return "none", nil
+	}
+
+	sort.Strings(caps)
+	return strings.Join(caps, ","), nil
+}
+
+func processCAPAMB(p *process.Process, ctx *psContext) (string, error) {
+	return parseCAP(p.Status.CapAmb)
+}
+
+func processCAPINH(p *process.Process, ctx *psContext) (string, error) {
+	return parseCAP(p.Status.CapInh)
+}
+
+func processCAPPRM(p *process.Process, ctx *psContext) (string, error) {
+	return parseCAP(p.Status.CapPrm)
+}
+
+func processCAPEFF(p *process.Process, ctx *psContext) (string, error) {
+	return parseCAP(p.Status.CapEff)
+}
+
+func processCAPBND(p *process.Process, ctx *psContext) (string, error) {
+	return parseCAP(p.Status.CapBnd)
+}
+
+func processSECCOMP(p *process.Process, ctx *psContext) (string, error) {
+	switch p.Status.Seccomp {
+		case "0":
+			return "disabled", nil
+		case "1":
+			return "strict", nil
+		case "2":
+			return "filter", nil
+		default:
+			return "?", nil
+	}
+}
+
+func processLABEL(p *process.Process, ctx *psContext) (string, error) {
+	return p.Label, nil
+}
+
+func processHPID(p *process.Process, ctx *psContext) (string, error) {
+	if hp := findHostProcess(p, ctx); hp != nil {
+		return hp.Pid, nil
+	}
+
+	return "?", nil
+}
+
+// processHUSER returns the effective user ID of the corresponding host process
+// of the (container) or "?" if no corresponding process could be found.
+func processHUSER(p *process.Process, ctx *psContext) (string, error) {
+	if hp := findHostProcess(p, ctx); hp != nil {
+		if ctx.opts != nil && len(ctx.opts.UIDMap) > 0 {
+			return findID(hp.Status.Uids[1], ctx.opts.UIDMap, process.LookupUID, "/proc/sys/fs/overflowuid")
+		}
+
+		return hp.Huser, nil
+	}
+
+	return "?", nil
+}
+
+func processHGROUP(p *process.Process, ctx *psContext) (string, error) {
+	if hp := findHostProcess(p, ctx); hp != nil {
+		if ctx.opts != nil && len(ctx.opts.GIDMap) > 0 {
+			return findID(hp.Status.Gids[1], ctx.opts.GIDMap, process.LookupGID, "/proc/sys/fs/overflowgid")
+		}
+
+		return hp.Hgroup, nil
+	}
+
+	return "?", nil
+}
+
+func processRSS(p *process.Process, ctx *psContext) (string, error) {
+	if p.Status.VMRSS == "" {
+		return "0", nil
+	}
+
+	return p.Status.VMRSS, nil
+}
+
+func processState(p *process.Process, ctx *psContext) (string, error) {
+	return p.Status.State, nil
 }
