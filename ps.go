@@ -90,3 +90,172 @@ func translateDescriptors(descriptors []string) ([]aixFormatDescriptor, error) {
 
 	return formatDescriptors, nil
 }
+
+var (
+	// DefaultDescriptors is the `ps -ef` compatible default format.
+	DefaultDescriptors = []string{"user", "pid", "ppid", "pcpu", "etime", "tty", "time", "args"}
+
+	// ErrUnknownDescriptor is returned when an unknown descriptor is parsed.
+	ErrUnknownDescriptor = errors.New("unknown descriptor")
+
+	aixFormatDescriptors = []aixFormatDescriptor{
+		{
+			code:   "%C",
+			normal: "pcpu",
+			header: "%CPU",
+			procFn: processPCPU,
+		},
+		{
+			code:   "%G",
+			normal: "group",
+			header: "GROUP",
+			procFn: processGROUP,
+		},
+		{
+			code:   "%P",
+			normal: "ppid",
+			header: "PPID",
+			procFn: processPPID,
+		},
+		{
+			code:   "%U",
+			normal: "user",
+			header: "USER",
+			procFn: processUSER,
+		},
+		{
+			code:   "%a",
+			normal: "args",
+			header: "COMMAND",
+			procFn: processARGS,
+		},
+		{
+			code:   "%c",
+			normal: "comm",
+			header: "COMMAND",
+			procFn: processCOMM,
+		},
+		{
+			code:   "%g",
+			normal: "rgroup",
+			header: "RGROUP",
+			procFn: processRGROUP,
+		},
+		{
+			code:   "%n",
+			normal: "nice",
+			header: "NI",
+			procFn: processNICE,
+		},
+		{
+			code:   "%p",
+			normal: "pid",
+			header: "PID",
+			procFn: processPID,
+		},
+		{
+			code:   "%r",
+			normal: "pgid",
+			header: "PGID",
+			procFn: processPGID,
+		},
+		{
+			code:   "%t",
+			normal: "etime",
+			header: "ELAPSED",
+			procFn: processETIME,
+		},
+		{
+			code:   "%u",
+			normal: "ruser",
+			header: "RUSER",
+			procFn: processRUSER,
+		},
+		{
+			code:   "%x",
+			normal: "time",
+			header: "TIME",
+			procFn: processTIME,
+		},
+		{
+			code:   "%y",
+			normal: "tty",
+			header: "TTY",
+			procFn: processTTY,
+		},
+		{
+			code:   "%z",
+			normal: "vsz",
+			header: "VSZ",
+			procFn: processVSZ,
+		},
+		{
+			normal: "capamb",
+			header: "AMBIENT CAPS",
+			procFn: processCAPAMB,
+		},
+		{
+			normal: "capinh",
+			header: "INHERITED CAPS",
+			procFn: processCAPINH,
+		},
+		{
+			normal: "capprm",
+			header: "PERMITTED CAPS",
+			procFn: processCAPPRM,
+		},
+		{
+			normal: "capeff",
+			header: "EFFECTIVE CAPS",
+			procFn: processCAPEFF,
+		},
+		{
+			normal: "capbnd",
+			header: "BOUNDING CAPS",
+			procFn: processCAPBND,
+		},
+		{
+			normal: "seccomp",
+			header: "SECCOMP",
+			procFn: processSECCOMP,
+		},
+		{
+			normal: "label",
+			header: "LABEL",
+			procFn: processLABEL,
+		},
+		{
+			normal: "hpid",
+			header: "HPID",
+			onHost: true,
+			procFn: processHPID,
+		},
+		{
+			normal: "huser",
+			header: "HUSER",
+			onHost: true,
+			procFn: processHUSER,
+		},
+		{
+			normal: "hgroup",
+			header: "HGROUP",
+			onHost: true,
+			procFn: processHGROUP,
+		},
+		{
+			normal: "rss",
+			header: "RSS",
+			procFn: processRSS,
+		},
+		{
+			normal: "state",
+			header: "STATE",
+			procFn: processState,
+		},
+		{
+			normal: "stime",
+			header: "STIME",
+			procFn: processStartTime,
+		},
+	}
+)
