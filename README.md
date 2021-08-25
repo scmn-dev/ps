@@ -2,6 +2,11 @@
 
 > `ps` displays data about all running processes in the current mount namespace.
 
+### Build
+
+1. to build run `make` .
+2. to install it run `make install`.
+
 ### Listing Processes:
 
 ```bash

@@ -3,7 +3,6 @@ export GOPROXY=https://proxy.golang.org
 
 SHELL= /bin/bash
 GO ?= go
-BUILD_DIR := ./bin
 BIN_DIR := /usr/local/bin
 NAME := ps
 PROJECT := github.com/gepis/ps
@@ -21,11 +20,11 @@ all: build
 
 .PHONY: build
 build: $(GO_SRC)
-	 $(GO_BUILD) -buildmode=pie -o $(BUILD_DIR)/$(NAME) $(PROJECT)/delta
+	 $(GO_BUILD) -buildmode=pie -o $(NAME) $(PROJECT)/delta
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(NAME)
 
 .PHONY: vendor
 vendor:
@@ -35,7 +34,7 @@ vendor:
 
 .PHONY: install
 install:
-	sudo install -D -m755 $(BUILD_DIR)/$(NAME) $(BIN_DIR)
+	sudo install -D -m755 $(NAME) $(BIN_DIR)
 
 .PHONY: uninstall
 uninstall:
