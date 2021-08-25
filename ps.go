@@ -408,3 +408,47 @@ func JoinNamespaceAndProcessInfoWithOptions(pid string, descriptors []string, op
 func JoinNamespaceAndProcessInfo(pid string, descriptors []string) ([][]string, error) {
 	return JoinNamespaceAndProcessInfoWithOptions(pid, descriptors, &JoinNamespaceOpts{})
 }
+
+func JoinNamespaceAndProcessInfoByPidsWithOptions(pids []string, descriptors []string, options *JoinNamespaceOpts) ([][]string, error) {
+	nsMap := make(map[string]bool)
+	pidList := []string{}
+	for _, pid := range pids {
+		ns, err := proc.ParsePIDNamespace(pid)
+		if err != nil {
+			if os.IsNotExist(errors.Cause(err)) {
+				continue
+			}
+
+			return nil, errors.Wrapf(err, "error extracting PID namespace")
+		}
+
+		if _, exists := nsMap[ns]; !exists {
+			nsMap[ns] = true
+			pidList = append(pidList, pid)
+		}
+	}
+
+	data := [][]string{}
+	for i, pid := range pidList {
+		pidData, err := JoinNamespaceAndProcessInfoWithOptions(pid, descriptors, options)
+		if os.IsNotExist(errors.Cause(err)) {
+			continue
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		if i == 0 {
+			data = append(data, pidData[0])
+		}
+
+		data = append(data, pidData[1:]...)
+	}
+
+	return data, nil
+}
+
+func JoinNamespaceAndProcessInfoByPids(pids []string, descriptors []string) ([][]string, error) {
+	return JoinNamespaceAndProcessInfoByPidsWithOptions(pids, descriptors, &JoinNamespaceOpts{})
+}
