@@ -21,7 +21,7 @@ all: build
 
 .PHONY: build
 build: $(GO_SRC)
-	 $(GO_BUILD) -buildmode=pie -o $(BUILD_DIR)/$(NAME) $(PROJECT)/sample
+	 $(GO_BUILD) -buildmode=pie -o $(BUILD_DIR)/$(NAME) $(PROJECT)/delta
 
 .PHONY: clean
 clean:
