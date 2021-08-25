@@ -2,14 +2,20 @@ package main
 
 import (
 	"fmt"
-	"strconv"
-	"io/ioutil"
-	"strings"
+	"os"
 	"sort"
+	"sync"
+	"strings"
+	"strconv"
+	"runtime"
+	"io/ioutil"
 
+	"github.com/gepis/ps/internal/cap"
 	"github.com/gepis/ps/internal/dev"
 	"github.com/gepis/ps/internal/process"
+	"github.com/gepis/ps/internal/proc"
 	"github.com/pkg/errors"
+	"golang.org/x/sys/unix"
 )
 
 type IDMap struct {
@@ -283,4 +289,118 @@ func readMappings(path string) ([]IDMap, error) {
 	}
 
 	return res, nil
+}
+
+func contextFromOptions(options *JoinNamespaceOpts) (*psContext, error) {
+	ctx := new(psContext)
+	ctx.opts = options
+	if ctx.opts != nil && ctx.opts.FillMappings {
+		uidMappings, err := readMappings("/proc/self/uid_map")
+		if err != nil {
+			return nil, err
+		}
+
+		gidMappings, err := readMappings("/proc/self/gid_map")
+		if err != nil {
+			return nil, err
+		}
+
+		ctx.opts.UIDMap = uidMappings
+		ctx.opts.GIDMap = gidMappings
+
+		ctx.opts.FillMappings = false
+	}
+	return ctx, nil
+}
+
+func JoinNamespaceAndProcessInfoWithOptions(pid string, descriptors []string, options *JoinNamespaceOpts) ([][]string, error) {
+	var (
+		data    [][]string
+		dataErr error
+		wg      sync.WaitGroup
+	)
+
+	aixDescriptors, err := translateDescriptors(descriptors)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, err := contextFromOptions(options)
+	if err != nil {
+		return nil, err
+	}
+
+	// extract data from host processes only on-demand / when at least one
+	// of the specified descriptors requires host data
+	for _, d := range aixDescriptors {
+		if d.onHost {
+			ctx.hostProcesses, err = hostProcesses(pid)
+			if err != nil {
+				return nil, err
+			}
+			break
+		}
+	}
+
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		runtime.LockOSThread()
+
+		// extract user namespaces prior to joining the mount namespace
+		currentUserNs, err := proc.ParseUserNamespace("self")
+		if err != nil {
+			dataErr = errors.Wrapf(err, "error determining user namespace")
+			return
+		}
+
+		pidUserNs, err := proc.ParseUserNamespace(pid)
+		if err != nil {
+			dataErr = errors.Wrapf(err, "error determining user namespace of PID %s", pid)
+		}
+
+		// join the mount namespace of pid
+		fd, err := os.Open(fmt.Sprintf("/proc/%s/ns/mnt", pid))
+		if err != nil {
+			dataErr = err
+			return
+		}
+	
+		defer fd.Close()
+
+		// create a new mountns on the current thread
+		if err = unix.Unshare(unix.CLONE_NEWNS); err != nil {
+			dataErr = err
+			return
+		}
+
+		if err := unix.Setns(int(fd.Fd()), unix.CLONE_NEWNS); err != nil {
+			dataErr = err
+			return
+		}
+
+		// extract all pids mentioned in pid's mount namespace
+		pids, err := proc.GetPIDs()
+		if err != nil {
+			dataErr = err
+			return
+		}
+
+		// join the user NS if the pid's user NS is different
+		// to the caller's user NS.
+		joinUserNS := currentUserNs != pidUserNs
+
+		ctx.containersProcesses, err = process.FromPIDs(pids, joinUserNS)
+		if err != nil {
+			dataErr = err
+			return
+		}
+
+		data, dataErr = processDescriptors(aixDescriptors, ctx)
+	}()
+
+	wg.Wait()
+
+	return data, dataErr
 }
