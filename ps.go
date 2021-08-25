@@ -503,3 +503,46 @@ func hostProcesses(pid string) ([]*process.Process, error) {
 
 	return processes, nil
 }
+
+func processDescriptors(formatDescriptors []aixFormatDescriptor, ctx *psContext) ([][]string, error) {
+	data := [][]string{}
+	// create header
+	header := []string{}
+	for _, desc := range formatDescriptors {
+		header = append(header, desc.header)
+	}
+	data = append(data, header)
+
+	// dispatch all descriptor functions on each process
+	for _, proc := range ctx.containersProcesses {
+		pData := []string{}
+		for _, desc := range formatDescriptors {
+			dataStr, err := desc.procFn(proc, ctx)
+			if err != nil {
+				return nil, err
+			}
+			pData = append(pData, dataStr)
+		}
+		data = append(data, pData)
+	}
+
+	return data, nil
+}
+
+func findHostProcess(p *process.Process, ctx *psContext) *process.Process {
+	for _, hp := range ctx.hostProcesses {
+		if len(hp.Status.NSpid) < 2 {
+			continue
+		}
+
+		if p.Pid == hp.Status.NSpid[1] && p.PidNS == hp.PidNS {
+			return hp
+		}
+	}
+
+	return nil
+}
+
+func processGROUP(p *process.Process, ctx *psContext) (string, error) {
+	return process.LookupGID(p.Status.Gids[1])
+}
