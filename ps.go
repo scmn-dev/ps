@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"io/ioutil"
+	"strings"
 
 	"github.com/gepis/ps/internal/dev"
 	"github.com/gepis/ps/internal/process"
@@ -64,4 +65,28 @@ func findID(idStr string, mapping []IDMap, lookupFunc func(uid string) (string, 
 	}
 
 	return string(overflow), nil
+}
+
+func translateDescriptors(descriptors []string) ([]aixFormatDescriptor, error) {
+	if len(descriptors) == 0 {
+		descriptors = DefaultDescriptors
+	}
+
+	formatDescriptors := []aixFormatDescriptor{}
+	for _, d := range descriptors {
+		d = strings.TrimSpace(d)
+		found := false
+		for _, aix := range aixFormatDescriptors {
+			if d == aix.code || d == aix.normal {
+				formatDescriptors = append(formatDescriptors, aix)
+				found = true
+			}
+		}
+
+		if !found {
+			return nil, errors.Wrapf(ErrUnknownDescriptor, "'%s'", d)
+		}
+	}
+
+	return formatDescriptors, nil
 }
