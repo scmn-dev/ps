@@ -109,7 +109,7 @@ var (
 		{
 			code:   "%C",
 			normal: "pcpu",
-			header: "%CPU",
+			header: "CPU",
 			procFn: processPCPU,
 		},
 		{
