@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"io/ioutil"
 	"strings"
+	"sort"
 
 	"github.com/gepis/ps/internal/dev"
 	"github.com/gepis/ps/internal/process"
@@ -259,3 +260,27 @@ var (
 		},
 	}
 )
+
+func ListDescriptors() (list []string) {
+	for _, d := range aixFormatDescriptors {
+		list = append(list, d.normal)
+	}
+
+	sort.Strings(list)
+	return
+}
+
+func readMappings(path string) ([]IDMap, error) {
+	mappings, err := proc.ReadMappings(path)
+	if err != nil {
+		return nil, err
+	}
+
+	var res []IDMap
+	for _, i := range mappings {
+		m := IDMap{ContainerID: i.ContainerID, HostID: i.HostID, Size: i.Size}
+		res = append(res, m)
+	}
+
+	return res, nil
+}
