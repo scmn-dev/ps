@@ -452,3 +452,54 @@ func JoinNamespaceAndProcessInfoByPidsWithOptions(pids []string, descriptors []s
 func JoinNamespaceAndProcessInfoByPids(pids []string, descriptors []string) ([][]string, error) {
 	return JoinNamespaceAndProcessInfoByPidsWithOptions(pids, descriptors, &JoinNamespaceOpts{})
 }
+
+func ProcessInfo(descriptors []string) ([][]string, error) {
+	pids, err := proc.GetPIDs()
+	if err != nil {
+		return nil, err
+	}
+
+	return ProcessInfoByPids(pids, descriptors)
+}
+
+func ProcessInfoByPids(pids []string, descriptors []string) ([][]string, error) {
+	aixDescriptors, err := translateDescriptors(descriptors)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, err := contextFromOptions(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx.containersProcesses, err = process.FromPIDs(pids, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return processDescriptors(aixDescriptors, ctx)
+}
+
+// hostProcesses returns all processes running in the current namespace.
+func hostProcesses(pid string) ([]*process.Process, error) {
+	// get processes
+	pids, err := proc.GetPIDsFromCgroup(pid)
+	if err != nil {
+		return nil, err
+	}
+
+	processes, err := process.FromPIDs(pids, false)
+	if err != nil {
+		return nil, err
+	}
+
+	// set the additional host data
+	for _, p := range processes {
+		if err := p.SetHostData(); err != nil {
+			return nil, err
+		}
+	}
+
+	return processes, nil
+}
