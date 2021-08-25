@@ -404,3 +404,7 @@ func JoinNamespaceAndProcessInfoWithOptions(pid string, descriptors []string, op
 
 	return data, dataErr
 }
+
+func JoinNamespaceAndProcessInfo(pid string, descriptors []string) ([][]string, error) {
+	return JoinNamespaceAndProcessInfoWithOptions(pid, descriptors, &JoinNamespaceOpts{})
+}
