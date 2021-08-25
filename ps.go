@@ -768,3 +768,12 @@ func processRSS(p *process.Process, ctx *psContext) (string, error) {
 func processState(p *process.Process, ctx *psContext) (string, error) {
 	return p.Status.State, nil
 }
+
+func processRGROUP(p *process.Process, ctx *psContext) (string, error) {
+	return process.LookupGID(p.Status.Gids[0])
+}
+
+// processPPID returns the parent process ID of process p.
+func processPPID(p *process.Process, ctx *psContext) (string, error) {
+	return p.Status.PPid, nil
+}
