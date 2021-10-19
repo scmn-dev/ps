@@ -10,10 +10,10 @@ import (
 	"runtime"
 	"io/ioutil"
 
-	capkg "github.com/gepis/ps/internal/cap"
-	"github.com/gepis/ps/internal/dev"
-	"github.com/gepis/ps/internal/process"
-	"github.com/gepis/ps/internal/proc"
+	capkg "github.com/scmn-dev/ps/internal/cap"
+	"github.com/scmn-dev/ps/internal/dev"
+	"github.com/scmn-dev/ps/internal/process"
+	"github.com/scmn-dev/ps/internal/proc"
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 )

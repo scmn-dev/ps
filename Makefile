@@ -5,7 +5,7 @@ SHELL= /bin/bash
 GO ?= go
 BIN_DIR := /usr/local/bin
 NAME := ps
-PROJECT := github.com/gepis/ps
+PROJECT := github.com/scmn-dev/ps
 GO_SRC=$(shell find . -name \*.go)
 
 GO_BUILD=$(GO) build

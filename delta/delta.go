@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/gepis/ps"
+	"github.com/scmn-dev/ps"
 	"github.com/sirupsen/logrus"
 )
 

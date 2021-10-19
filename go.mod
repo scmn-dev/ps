@@ -1,4 +1,4 @@
-module github.com/gepis/ps
+module github.com/scmn-dev/ps
 
 go 1.16
 

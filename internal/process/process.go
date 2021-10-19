@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gepis/ps/internal/host"
-	"github.com/gepis/ps/internal/proc"
+	"github.com/scmn-dev/ps/internal/host"
+	"github.com/scmn-dev/ps/internal/proc"
 
 	"github.com/opencontainers/runc/libcontainer/user"
 	"github.com/pkg/errors"

@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gepis/ps/internal/cgroups"
+	"github.com/scmn-dev/ps/internal/cgroups"
 )
 
 // GetPIDs extracts and returns all PIDs from /proc.
